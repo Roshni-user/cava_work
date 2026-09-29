@@ -5,6 +5,11 @@ Full-stack Hubble assignment for Cavli Wireless. The application has two parts:
 1. A Hubble landing page that presents connectivity features, links each feature to its own page, shows live MMI exhibitors, and accepts a Consult Now request.
 2. An MMI Connect exhibitor scraper that reads the public catalogue over GraphQL, pages through the full result set, and upserts exhibitors into PostgreSQL.
 
+## Demo
+
+🎥 [Watch the Demo Video]([https://drive.google.com/file/d/1xpR5TswBQ5F2o7UoKb-H2YdJ0inZwlhb/view?usp=drive_link](https://drive.google.com/file/d/1xpR5TswBQ5F2o7UoKb-H2YdJ0inZwlhb/view?usp=drive_link))
+
+
 ## Tech stack
 
 - Next.js 16 (App Router) and React 19
