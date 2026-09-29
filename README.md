@@ -7,8 +7,7 @@ Full-stack Hubble assignment for Cavli Wireless. The application has two parts:
 
 ## Demo
 
-🎥 [Watch the Demo Video]([https://drive.google.com/file/d/1xpR5TswBQ5F2o7UoKb-H2YdJ0inZwlhb/view?usp=drive_link](https://drive.google.com/file/d/1xpR5TswBQ5F2o7UoKb-H2YdJ0inZwlhb/view?usp=drive_link))
-
+🎥 [Watch the Demo Video](https://drive.google.com/file/d/1xpR5TswBQ5F2o7UoKb-H2YdJ0inZwlhb/view?usp=drive_link)
 
 ## Tech stack
 
