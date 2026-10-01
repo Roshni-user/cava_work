@@ -1,0 +1,259 @@
+// PostgreSQL connection is configured in prisma7.config.ts through DATABASE_URL.
+// MMI customerRating and appoinment are visitor session state and are not stored.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AddressKind {
+  REGISTERED
+  HEADQUARTERS
+
+  @@map("address_kind")
+}
+
+enum ContactPointKind {
+  EMAIL
+  ALTERNATE_EMAIL
+  MOBILE
+  TELEPHONE
+  FAX
+  AREA_CODE_TELEPHONE
+
+  @@map("contact_point_kind")
+}
+
+enum BookingStatus {
+  PENDING
+  BOOKED
+
+  @@map("booking_status")
+}
+
+model CatalogueGroup {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  shows Show[]
+
+  @@map("catalogue_groups")
+}
+
+model Show {
+  id               String   @id @default(uuid()) @db.Uuid
+  mmiShowId        Int      @unique @map("mmi_show_id")
+  catalogueGroupId String   @map("catalogue_group_id") @db.Uuid
+  name             String
+  startDate        DateTime @map("start_date")
+  endDate          DateTime @map("end_date")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  catalogueGroup CatalogueGroup @relation(fields: [catalogueGroupId], references: [id], onDelete: Restrict)
+  exhibitors     Exhibitor[]
+
+  @@index([catalogueGroupId])
+  @@map("shows")
+}
+
+model Exhibitor {
+  id                     String   @id @default(uuid()) @db.Uuid
+  /// MMI customer.id. Unique in the inspected catalogue and the upsert key.
+  mmiCustomerId          Int      @unique @map("mmi_customer_id")
+  /// MMI customer.userId. Not unique by itself; unique together with the show.
+  userId                 String   @map("user_id") @db.Uuid
+  showId                 String   @map("show_id") @db.Uuid
+  companyName            String   @map("company_name")
+  website                String?
+  logoUrl                String?  @map("logo_url")
+  companyProfile         String?  @map("company_profile") @db.Text
+  shortCompanyProfile    String?  @map("short_company_profile") @db.Text
+  showCatalogueName      String?  @map("show_catalogue_name")
+  typeOfExhibitor        String?  @map("type_of_exhibitor")
+  participatedBy         String?  @map("participated_by")
+  participatedCountry    String?  @map("participated_country")
+  associations           String?  @db.Text
+  gstNumber              String?  @map("gst_number")
+  tanNumber              String?  @map("tan_number")
+  panNumber              String?  @map("pan_number")
+  gstStatus              String?  @map("gst_status")
+  /// Present in the list payload and null for every inspected record.
+  exhibitorType          String?  @map("exhibitor_type")
+  /// Present in the list payload and null for every inspected record.
+  sponsorship            String?
+  boothNumber            String?  @map("booth_number")
+  hallNumber             String?  @map("hall_number")
+  boothType              String?  @map("booth_type")
+  squareMetres           Decimal? @map("square_metres") @db.Decimal(10, 2)
+  interestedSquareMetres Decimal? @map("interested_square_metres") @db.Decimal(10, 2)
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  show              Show                @relation(fields: [showId], references: [id], onDelete: Restrict)
+  addresses         Address[]
+  contact           Contact?
+  categories        ExhibitorCategory[]
+  catalogueProducts ExhibitorProduct[]
+
+  @@unique([showId, userId])
+  @@index([companyName])
+  @@map("exhibitors")
+}
+
+model Address {
+  id          String      @id @default(uuid()) @db.Uuid
+  exhibitorId String      @map("exhibitor_id") @db.Uuid
+  kind        AddressKind
+  line1       String?
+  city        String?
+  state       String?
+  country     String?
+  postalCode  String?     @map("postal_code")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  exhibitor Exhibitor @relation(fields: [exhibitorId], references: [id], onDelete: Cascade)
+
+  @@unique([exhibitorId, kind])
+  @@map("addresses")
+}
+
+model Contact {
+  id          String   @id @default(uuid()) @db.Uuid
+  exhibitorId String   @unique @map("exhibitor_id") @db.Uuid
+  title       String?
+  firstName   String?  @map("first_name")
+  lastName    String?  @map("last_name")
+  designation String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  exhibitor Exhibitor      @relation(fields: [exhibitorId], references: [id], onDelete: Cascade)
+  points    ContactPoint[]
+
+  @@map("contacts")
+}
+
+model ContactPoint {
+  id        String           @id @default(uuid()) @db.Uuid
+  contactId String           @map("contact_id") @db.Uuid
+  kind      ContactPointKind
+  value     String
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, kind])
+  @@map("contact_points")
+}
+
+model Category {
+  id                  String   @id @default(uuid()) @db.Uuid
+  mmiCategoryId       Int      @unique @map("mmi_category_id")
+  mainCategory        String   @map("main_category")
+  subCategory         String?  @map("sub_category")
+  categoryName        String?  @map("category_name")
+  categoryType        String   @map("category_type")
+  productCategoryType String   @map("product_category_type")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  exhibitors ExhibitorCategory[]
+
+  @@index([categoryType, productCategoryType])
+  @@map("categories")
+}
+
+model ExhibitorCategory {
+  id                    String   @id @default(uuid()) @db.Uuid
+  /// MMI customerCategories[].id.
+  mmiCustomerCategoryId Int      @unique @map("mmi_customer_category_id")
+  exhibitorId           String   @map("exhibitor_id") @db.Uuid
+  categoryId            String   @map("category_id") @db.Uuid
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  exhibitor Exhibitor @relation(fields: [exhibitorId], references: [id], onDelete: Cascade)
+  category  Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([exhibitorId, categoryId])
+  @@index([categoryId])
+  @@map("exhibitor_categories")
+}
+
+model ExhibitorProduct {
+  id          String   @id @default(uuid()) @db.Uuid
+  exhibitorId String   @map("exhibitor_id") @db.Uuid
+  name        String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  exhibitor Exhibitor @relation(fields: [exhibitorId], references: [id], onDelete: Cascade)
+
+  @@unique([exhibitorId, name])
+  @@map("exhibitor_products")
+}
+
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  name        String
+  summary     String?
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  features      ProductFeature[]
+  consultations Consultation[]
+
+  @@map("products")
+}
+
+model ProductFeature {
+  id          String   @id @default(uuid()) @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  title       String
+  description String?  @db.Text
+  sortOrder   Int      @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, sortOrder])
+  @@map("product_features")
+}
+
+model Consultation {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  email       String
+  phone       String?
+  companyName String?  @map("company_name")
+  message       String        @db.Text
+  productId     String?       @map("product_id") @db.Uuid
+  slotStart     DateTime?     @map("slot_start")
+  slotEnd       DateTime?     @map("slot_end")
+  googleEventId String?       @unique @map("google_event_id")
+  meetUrl       String?       @map("meet_url")
+  bookingStatus BookingStatus @default(PENDING) @map("booking_status")
+  bookedAt      DateTime?     @map("booked_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@unique([slotStart])
+  @@index([email])
+  @@index([productId])
+  @@index([createdAt])
+  @@index([bookingStatus])
+  @@map("consultations")
+}
